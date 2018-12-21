@@ -3,7 +3,6 @@ package com.zcy.nidavellir.newtoast
 import android.content.Context
 import android.view.LayoutInflater
 import android.widget.Button
-import android.widget.TextView
 
 /**
  * @author:       zhaochunyu
