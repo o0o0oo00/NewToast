@@ -31,7 +31,8 @@ fun Context.svgDrawable(id: Int): Drawable {
 // warning
 private var lastNewToast = WeakReference<NewToast?>(null)
 private var lastNewToastMsg = WeakReference<String?>(null)
-fun Context.warning(msg: String) {
+fun warning(msg: String) {
+    val act = App.topActivity.get() ?: return
     if (lastNewToast.get()?.isShowing() == true && lastNewToastMsg.get() == msg) {
         return
     }
@@ -41,7 +42,7 @@ fun Context.warning(msg: String) {
         lastNewToastMsg = WeakReference(msg)
         toast.setImageRes(R.drawable.ic_error)
         toast.setToastText(msg)
-        toast.setViewBg(this, R.color.warning)
+        toast.setViewBg(act, R.color.warning)
         toast.show()
     }, 50)
 }

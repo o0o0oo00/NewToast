@@ -96,7 +96,7 @@ class NewToast {
         }
     }
 
-    fun setViewBg(ctx: Context, @ColorRes color: Int) {
+    fun setViewBg(ctx: Activity, @ColorRes color: Int) {
         val up = bg.background
         val drawableUp = DrawableCompat.wrap(up)
         DrawableCompat.setTint(drawableUp, ContextCompat.getColor(ctx, color))
