@@ -17,3 +17,8 @@ PopupWindow的层级为`TYPE_APPLICATION_PANEL`
 ```
 warning("warning")
 ```
+
+如下图所示，我的Alert显示在了Dialog的**阴影之上**
+
+
+![image](https://raw.githubusercontent.com/o0o0oo00/NewToast/master/image/image.png)
