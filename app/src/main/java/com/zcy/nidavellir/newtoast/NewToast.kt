@@ -1,6 +1,5 @@
-package com.zcy.nidavellir.newtoast
+package com.moretech.coterie.widget
 
-import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.app.Activity
 import android.app.Application
@@ -8,6 +7,8 @@ import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.PointF
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.support.annotation.ColorRes
 import android.support.annotation.DrawableRes
 import android.support.v4.content.ContextCompat
@@ -17,8 +18,8 @@ import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.zcy.nidavellir.newtoast.R
-import com.zcy.nidavellir.newtoast.svgDrawable
+import com.zcy.nidavellir.newtoast.*
+import java.lang.Exception
 
 /**
  * @author:       zhaochunyu
@@ -34,7 +35,7 @@ class NewToast {
     private val DURATION_SHORT = 2000L
     private val DURATION_ANIM = 500L
     private val TRIGGER_OFFSET = App.instance.dp2px(3f)
-    private val FIXED_MARGIN = App.instance.dp2px(25f)
+    private val FIXED_MARGIN = App.instance.statusBarHeight + App.instance.dp2px(1F)
     private var isShowing = false
     private val root: View // 根布局
     private val imageView: ImageView // icon
@@ -43,6 +44,7 @@ class NewToast {
     private var downPoint: PointF = PointF(0F, 0F) // 触摸位置
     private var dismissTime = 0L
     private var isDismissing = false // 正在取消
+    private var lifeListener: Application.ActivityLifecycleCallbacks? = null
 
     private var windowManager: WindowManager
     val act: Context = App.topActivity.get() as? Activity ?: App.instance as Context
@@ -74,6 +76,7 @@ class NewToast {
         imageView = root.findViewById(R.id.image_view)
         textView = root.findViewById(R.id.text_view)
         bg = root.findViewById(R.id.root_view)
+        root.setPadding(0, App.instance.statusBarHeight + App.instance.dp2px(1F), 0, 0)
     }
 
     fun isShowing(): Boolean {
@@ -82,6 +85,7 @@ class NewToast {
 
     fun setToastText(text: String) {
         var text = text
+        root.tag = text
         if (TextUtils.isEmpty(text)) {
             text = ""
         }
@@ -96,10 +100,10 @@ class NewToast {
         }
     }
 
-    fun setViewBg(ctx: Activity, @ColorRes color: Int) {
+    fun setViewBg(@ColorRes color: Int) {
         val up = bg.background
         val drawableUp = DrawableCompat.wrap(up)
-        DrawableCompat.setTint(drawableUp, ContextCompat.getColor(ctx, color))
+        DrawableCompat.setTint(drawableUp, ContextCompat.getColor(act, color))
     }
 
     fun setImageRes(@DrawableRes id: Int) {
@@ -109,8 +113,9 @@ class NewToast {
 
 
     fun show() {
-        isShowing = true
-        App.instance.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+        val activity = (act as? Activity) ?: return
+        if (activity.isFinishing || activity.isDestroyed) return
+        lifeListener = object : Application.ActivityLifecycleCallbacks {
             override fun onActivityPaused(activity: Activity?) {
             }
 
@@ -121,55 +126,66 @@ class NewToast {
             }
 
             override fun onActivityDestroyed(activity: Activity?) {
-                if (root.isAttachedToWindow) {
-                    windowManager.removeView(root)
-                }
             }
 
             override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
             }
 
             override fun onActivityStopped(activity: Activity?) {
-
+                if (root.isAttachedToWindow && activity == act) {
+                    windowManager.removeViewImmediate(root)
+                    isShowing = false
+                    App.instance.unregisterActivityLifecycleCallbacks(lifeListener)
+                }
             }
 
             override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
             }
 
-        })
-
-        // init layout params
-        val layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            0, 0,
-            PixelFormat.TRANSPARENT
-        )
-        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
-        layoutParams.gravity = Gravity.TOP
-
-        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or // 不获取焦点，以便于在弹出的时候 下层界面仍然可以进行操作
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR // 确保你的内容不会被装饰物(如状态栏)掩盖.
-        // popWindow的层级为 TYPE_APPLICATION_PANEL
-        layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL
-        if ((act as? Activity)?.isFinishing == true) {
-            return
         }
-        windowManager.addView(root, layoutParams)
 
-        val widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.AT_MOST)
-        val heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        root.measure(widthMeasureSpec, heightMeasureSpec)
-        val totalOffset = (root.measuredHeight + FIXED_MARGIN).toFloat()
-        val sa = ObjectAnimator.ofFloat(root, "translationY", -totalOffset, 0F)
-        sa.duration = DURATION_ANIM
-        sa.start()
-        root.postDelayed({ dismiss() }, (if (duration == Toast.LENGTH_LONG) {
-            DURATION_LONG
-        } else {
-            DURATION_SHORT
-        }) - DURATION_ANIM)
+        try {
+            // init layout params
+            val layoutParams = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                0, 0,
+                PixelFormat.TRANSPARENT
+            )
+            layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+            layoutParams.gravity = Gravity.TOP
+
+            layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or // 不获取焦点，以便于在弹出的时候 下层界面仍然可以进行操作
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR // 确保你的内容不会被装饰物(如状态栏)掩盖.
+            // popWindow的层级为 TYPE_APPLICATION_PANEL
+            layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_SUB_PANEL
+
+            windowManager.addView(root, layoutParams)
+            App.instance.registerActivityLifecycleCallbacks(lifeListener)
+
+            isShowing = true
+            val widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.AT_MOST)
+            val heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            root.measure(widthMeasureSpec, heightMeasureSpec)
+            val totalOffset = (root.measuredHeight + FIXED_MARGIN).toFloat()
+            val sa = ObjectAnimator.ofFloat(root, "translationY", -totalOffset, 0F)
+            sa.duration = DURATION_ANIM
+            sa.start()
+            root.postDelayed({ dismiss() }, (
+                    if (duration == Toast.LENGTH_LONG) {
+                        DURATION_LONG
+                    } else {
+                        DURATION_SHORT
+                    })
+                    - DURATION_ANIM
+            )
+        } catch (e: Exception){
+            e.printStackTrace()
+            App.instance.unregisterActivityLifecycleCallbacks(lifeListener)
+        }
+
+
     }
 
     @Synchronized
@@ -177,7 +193,6 @@ class NewToast {
         if (isDismissing) {
             return
         }
-        isShowing = false
         dismissTime = System.currentTimeMillis()
         isDismissing = true
         val widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.AT_MOST)
@@ -186,23 +201,16 @@ class NewToast {
         val totalOffset = (root.measuredHeight + FIXED_MARGIN).toFloat()
         val ea = ObjectAnimator.ofFloat(root, "translationY", 0f, -totalOffset)
         ea.duration = DURATION_ANIM
-        ea.addListener(object :Animator.AnimatorListener{
-            override fun onAnimationRepeat(animation: Animator?) {
-            }
-
-            override fun onAnimationEnd(animation: Animator?) {
-                if (root.isAttachedToWindow && (act as? Activity)?.isFinishing != true) {
-                    windowManager.removeView(root)
+        Handler(Looper.getMainLooper()).postDelayed(
+            {
+                if (root.isAttachedToWindow) {
+                    windowManager.removeViewImmediate(root)
+                    isShowing = false
+                    App.instance.unregisterActivityLifecycleCallbacks(lifeListener)
                 }
             }
-
-            override fun onAnimationCancel(animation: Animator?) {
-            }
-
-            override fun onAnimationStart(animation: Animator?) {
-            }
-
-        })
+            , DURATION_ANIM
+        )
         ea.start()
     }
 

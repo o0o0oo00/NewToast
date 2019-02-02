@@ -19,11 +19,19 @@ class MainActivity : AppCompatActivity() {
 
     fun onclick2(v: View) {
 
-        NormalDialog.Builder(this).create().show()
+        askDialog(supportFragmentManager) {
+            mTitle = "我是标题"
+            mMessage = "我是内容 有木有WIFI！"
+            lowerBackground = true
+            sureClick {
+            }
+
+            cancelClick { }
+        }
 
         Handler().postDelayed({
-            warning("有木有WIFI！ 有木有WIFI！")
-        }, 200)
+            warning("我是FBI Warning警告框！！！")
+        }, 1000)
 
     }
 }
