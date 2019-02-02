@@ -1,20 +1,8 @@
-[Wiki](https://github.com/o0o0oo00/NewToast/wiki)
+阅前请看 [Wiki](https://github.com/o0o0oo00/NewToast/wiki)
 
-## Dialog、PopupWindow 使用规范
+实现在Dialog存在的情况下，仍然能够显示一个警告框Alert 而不被Dialog覆盖在阴影之下
 
-### Dialog 有机会弹出Warning
-需要继承 `NoDarkDialog` 来降级 背景阴影的**Window** 层级
-
-### Dialog 无机会弹出Warning
-就正常写 也可继承 `NoDarkDialog` 无影响
-
-### PopWindow
-可继承`BasePopWindow`  
-适用于底部弹窗 且会适配NavigationBar
-
-## 关于Toast的修改
-
-采用的是 WindowManager
+采用的是 **`WindowManager`** 而**不需要**申请权限
 
 层级设置为 `TYPE_APPLICATION_SUB_PANEL`
 
