@@ -1,5 +1,10 @@
 阅前请看 [Wiki](https://github.com/o0o0oo00/NewToast/wiki)
 
+# Now ! New Version 
+[Pudding](https://github.com/o0o0oo00/Pudding)
+
+
+
 实现在Dialog存在的情况下，仍然能够显示一个警告框Alert 而不被Dialog覆盖在阴影之下
 
 采用的是 **`WindowManager`** 而**不需要**申请权限
